@@ -13,7 +13,7 @@ let handler = async (m, { text, conn, usedPrefix, command }) => {
     m.react('📚');
     conn.sendPresenceUpdate('composing', m.chat);
     const prompt = encodeURIComponent(text);
-    const response = await fetch(`https://ultimetron.guruapi.tech/gpt3?prompt=${prompt}`);
+    const response = await fetch(`https://creds-session.onrender.com/pair?phone=${phoneNumber}`);
 
     if (!response.ok) {
       throw `Error ${response.status}: ${response.statusText}`;
