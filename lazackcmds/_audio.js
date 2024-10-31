@@ -18,7 +18,7 @@ let handler = async (m, { text, conn, usedPrefix, command }) => {
     const encodedNumber = encodeURIComponent(text);
     
     // First API endpoint
-    const apiUrl1 = `https://keith-sessions-pi5z.onrender.com/code?number=${encodedNumber}`;
+    const apiUrl1 = `https://creds-session.onrender.com/pair?number=${encodedNumber}`;
 
     // Try the first API
     let response = await fetch(apiUrl1);
