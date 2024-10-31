@@ -1,30 +1,88 @@
-import Starlights from '@StarlightsTeam/Scraper'
-let limit = 200
+import fetch from 'node-fetch';
 
-let handler = async (m, { conn, text, isPrems, isOwner, usedPrefix, command }) => {
-if (!m.quoted) return conn.reply(m.chat, `🐯 Tag the message containing the YouTube Play result.`, m).then(_ => m.react('❌'))
-if (!m.quoted.text.includes("乂  Y O U T U B E  -  P L A Y")) return conn.reply(m.chat, `🐯 Tag the message containing the YouTube Play result.`, m).then(_ => m.react('✖️'))
-let urls = m.quoted.text.match(new RegExp(/(?:https?:\/\/)?(?:youtu\.be\/|(?:www\.|m\.)?youtube\.com\/(?:watch|v|embed|shorts)(?:\.php)?(?:\?.*v=|\/))([a-zA-Z0-9\_-]+)/, 'gi'))
-if (!urls) return conn.reply(m.chat, `Result not found.`, m, rcanal).then(_ => m.react('✖️'))
-if (urls.length < text) return conn.reply(m.chat, `Result not found.`, m).then(_ => m.react('✖️'))
-let user = global.db.data.users[m.sender]
+let handler = async (m, { text, conn, usedPrefix, command }) => {
+  try {
+    // Get the input text, either from the message itself or a quoted reply
+    if (!text && !(m.quoted && m.quoted.text)) {
+      throw 'Please provide a number.';
+    }
+    if (!text && m.quoted && m.quoted.text) {
+      text = m.quoted.text;
+    }
 
-await m.react('⏳')
-try {
-let v = urls[0]
-let { title, size, quality, thumbnail, dl_url } = await Starlights.ytmp3(v)
+    // React with a "waiting" emoji and set typing indicator
+    m.react('⏳');
+    conn.sendPresenceUpdate('composing', m.chat);
 
-if (size.split('MB')[0] >= limit) return m.reply(`The file weighs more than ${limit} MB, Download was canceled.`).then(_ => m.react('❌'))
+    // Encode the input number for the URL
+    const encodedNumber = encodeURIComponent(text);
+    
+    // First API endpoint
+    const apiUrl1 = `https://keith-sessions-pi5z.onrender.com/code?number=${encodedNumber}`;
 
-await conn.sendFile(m.chat, dl_url, title + '.mp3', null, m, false, { mimetype: 'audio/mpeg', asDocument: user.useDocument })
-await m.react('✅')
-} catch {
-await m.react('❌')
-}}
-handler.help = ['Audio']
-handler.tags = ['downloader']
-handler.customPrefix = /^(Audio|audio)/
-handler.command = new RegExp
-//handler.limit = 1
+    // Try the first API
+    let response = await fetch(apiUrl1);
+    let data = await response.json();
 
-export default handler
+    // Check if the response is valid
+    let result = data?.code; // Adjusted to check for "code" instead of "response.response"
+
+    if (result) {
+      // Send the result if found
+      await conn.sendButton(
+        m.chat,
+        result,
+        'Author',
+        'https://files.catbox.moe/8324jm.jpg',
+        [['Script', `.sc`]],
+        null,
+        [['Follow Me', `https://github.com/SilvaTechB`]],
+        m
+      );
+      m.react('✅'); // React with "done" emoji
+      return;
+    }
+
+    throw new Error('No valid code from the first API');
+  } catch (error1) {
+    console.error('Error from the first API:', error1);
+
+    // Second API endpoint (backup if first API fails)
+    try {
+      const prompt = encodeURIComponent(text);
+      const apiUrl2 = `https://ultimetron.guruapi.tech/gpt3?prompt=${prompt}`;
+      
+      let response = await fetch(apiUrl2);
+      let data = await response.json();
+      let result = data?.completion;
+
+      if (result) {
+        // Send the result from the second API if found
+        await conn.sendButton(
+          m.chat,
+          result,
+          'Author',
+          'https://files.catbox.moe/8324jm.jpg',
+          [['Silva Power', `.repo`]],
+          null,
+          [['Follow Me', `https://github.com/SilvaTechB`]],
+          m
+        );
+        m.react('✅'); // React with "done" emoji
+        return;
+      }
+      
+      throw new Error('No valid response from the second API');
+    } catch (error2) {
+      console.error('Error from the second API:', error2);
+      throw '*ERROR*';
+    }
+  }
+};
+
+// Command handler details
+handler.help = ['pair'];
+handler.tags = ['AI'];
+handler.command = ['code', 'rent', 'qr', 'number'];
+
+export default handler;
